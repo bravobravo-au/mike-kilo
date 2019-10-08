@@ -102,3 +102,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+#custom
+*-config.ini
+bin/*
+lib/*
+include/*
+compressed-logs/*
+#
