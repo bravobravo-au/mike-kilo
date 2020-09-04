@@ -109,4 +109,5 @@ bin/*
 lib/*
 include/*
 compressed-logs/*
+dev-compressed-logs/*
 #

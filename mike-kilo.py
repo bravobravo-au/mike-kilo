@@ -36,6 +36,21 @@ import json
 import csv
 import os
 
+mqtt_connected = False
+
+def on_connect(client, userdata, flags, rc):
+    global mqtt_connected
+    if rc == 0:
+        mqtt_connected = True 
+    else:
+        mqtt_connected = False
+
+def on_disconnect(client, userdata, rc):
+    global mqtt_connected
+    mqtt_connected = False
+
+
+
 buffer = []
 
 parser = argparse.ArgumentParser()
@@ -144,6 +159,7 @@ def on_message(client, userdata, message):
                     logfile.write(json.dumps(item) + "\n")
         buffer = []
 
+
 client = mqtt.Client(
                                 client_id=mqtt_client_name, 
                                 clean_session=False, 
@@ -152,16 +168,23 @@ client = mqtt.Client(
                         )
 if mqtt_username is not None:
         client.username_pw_set(username=mqtt_username, password=mqtt_password)
-        
-client.connect(
+
+def mqtt_connect():
+    try:        
+        client.connect(
                 mqtt_host, 
                 port=int(mqtt_port), 
                 keepalive=10, 
                 bind_address=""
                         )
+    except:
+        pass
 
+if mqtt_connected == False:
+    mqtt_connect()
 client.on_message=on_message
-
+client.on_connect=on_connect
+client.on_disconnect=on_disconnect
 
 client.subscribe(mqtt_power_topic)
 client.loop_forever(timeout=1.0, max_packets=1, retry_first_connection=False)
