@@ -107,6 +107,7 @@ venv.bak/
 *-config.ini
 bin/*
 lib/*
+share/*
 include/*
 compressed-logs/*
 dev-compressed-logs/*
