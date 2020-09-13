@@ -111,4 +111,6 @@ share/*
 include/*
 compressed-logs/*
 dev-compressed-logs/*
+nohup.out
+mike-kilo.sh
 #

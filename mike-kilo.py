@@ -35,6 +35,8 @@ import argparse
 import json
 import csv
 import os
+import sys
+import signal
 
 mqtt_connected = False
 
@@ -92,6 +94,41 @@ else:
     mqtt_username                   = None
     mqtt_password                   = None
 
+def write_buffer_to_log():
+    global buffer
+    dateStr = datetime.utcnow().strftime('%Y-%m-%d')
+    dirPath = log_dir + '/' + datetime.utcnow().strftime('%Y-%m')
+
+    try:
+        os.makedirs(dirPath)
+    except FileExistsError:
+        pass
+
+    filename = dirPath + '/' + buffer_filename_prefix + dateStr + "." + buffer_filename_suffix
+
+    with open(filename, "a+") as logfile:
+        for item in buffer:
+            if outputFormat == "CSV":
+                logfile.write(
+				"sensor=%s,DateTime=%s,YesterdayKWH=%s,LifeTimeKWH=%s,PowerFactor=%s,Voltage=%s,Current=%s,ActivePower=%s,ReactivePower=%s,ApparentPower=%s\n" % 
+				( 
+				item['Sensor'],
+                                item['DateTime'],
+                                item['YesterdayKWH'],
+                                item['LifeTimeKWH'],
+                                item['PowerFactor'],
+                                item['Voltage'],
+                                item['Current'],
+                                item['ActivePower'],
+                                item['ReactivePower'],
+                                item['ApparentPower'],
+				)
+			)
+            if outputFormat == "JSON":
+                logfile.write(json.dumps(item) + "\n")
+    buffer = []
+
+
 def on_message(client, userdata, message):
     global buffer
 
@@ -127,37 +164,7 @@ def on_message(client, userdata, message):
             })
 
     if len(buffer) >= int(buffer_length):
-        dateStr = datetime.utcnow().strftime('%Y-%m-%d')
-        dirPath = log_dir + '/' + datetime.utcnow().strftime('%Y-%m')
-
-        try:
-            os.makedirs(dirPath)
-        except FileExistsError:
-            pass
-
-        filename = dirPath + '/' + buffer_filename_prefix + dateStr + "." + buffer_filename_suffix
-
-        with open(filename, "a+") as logfile:
-            for item in buffer:
-                if outputFormat == "CSV":
-                    logfile.write(
-				"sensor=%s,DateTime=%s,YesterdayKWH=%s,LifeTimeKWH=%s,PowerFactor=%s,Voltage=%s,Current=%s,ActivePower=%s,ReactivePower=%s,ApparentPower=%s\n" % 
-				( 
-				item['Sensor'],
-                                item['DateTime'],
-                                item['YesterdayKWH'],
-                                item['LifeTimeKWH'],
-                                item['PowerFactor'],
-                                item['Voltage'],
-                                item['Current'],
-                                item['ActivePower'],
-                                item['ReactivePower'],
-                                item['ApparentPower'],
-				)
-			)
-                if outputFormat == "JSON":
-                    logfile.write(json.dumps(item) + "\n")
-        buffer = []
+        write_buffer_to_log()
 
 
 client = mqtt.Client(
@@ -179,6 +186,13 @@ def mqtt_connect():
                         )
     except:
         pass
+
+def terminateProcess(signalNumber, frame):
+    print ('(SIGTERM) terminating process')
+    write_buffer_to_log()
+    sys.exit()
+
+signal.signal(signal.SIGTERM, terminateProcess)
 
 if mqtt_connected == False:
     mqtt_connect()
